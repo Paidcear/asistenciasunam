@@ -1,0 +1,17 @@
+[
+    {
+        "id": 1,
+        "apellido_paterno": "Delgado",
+        "apellido_materno": "Mora",
+        "nombre": "Julio Cesar",
+        "matricula": 419017871,
+        "nivel": 11,
+        "materia": "Opci\u00c3\u00b3n 1",
+        "registros": {
+            "2025-04-09": {
+                "asistencias": 1,
+                "retardos": 0
+            }
+        }
+    }
+]
