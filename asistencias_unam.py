@@ -49,7 +49,7 @@ menu = st.sidebar.selectbox(
 if menu == "Registrar Asistencia":
     st.title("Registrar Asistencias")
     asistencia_id = st.number_input("Ingresa el ID del Alumno:", min_value=1, step=1, format="%d")
-    tipo = st.selectbox("Selecciona el tipo de registro:", ["Asistencia", "Retardo"], key="tipo_asistencia")
+    tipo = st.selectbox("Selecciona el tipo de registro:", ["Asistencia", "Justificado"], key="tipo_asistencia")
     fecha = st.date_input("Selecciona la fecha:", value=date.today(), key="fecha_asistencia")
 
     if st.button("Registrar", key="registrar_asistencia_action_button"):
@@ -59,13 +59,13 @@ if menu == "Registrar Asistencia":
             if "registros" not in alumno:
                 alumno["registros"] = {}
             if fecha_str not in alumno["registros"]:
-                alumno["registros"][fecha_str] = {"asistencias": 0, "retardos": 0}
+                alumno["registros"][fecha_str] = {"asistencias": 0, "justificados": 0}
             if tipo == "Asistencia":
                 alumno["registros"][fecha_str]["asistencias"] += 1
                 st.success(f"Asistencia registrada para el alumno {alumno['nombre']} el {fecha_str}.")
-            elif tipo == "Retardo":
-                alumno["registros"][fecha_str]["retardos"] += 1
-                st.success(f"Retardo registrado para el alumno {alumno['nombre']} el {fecha_str}.")
+            elif tipo == "Justificado":
+                alumno["registros"][fecha_str]["justificados"] += 1
+                st.success(f"Justificado registrado para el alumno {alumno['nombre']} el {fecha_str}.")
             save_data(data)
         else:
             st.error("No se encontró ningún alumno con ese ID.")
@@ -78,7 +78,7 @@ elif menu == "Registrar Alumno":
     apellido_materno = st.text_input("Apellido Materno:")
     nombre = st.text_input("Nombre(s):")
     matricula = st.text_input("Matrícula:")
-    nivel = st.text_input("Licenciatura:")
+    licenciatura = st.text_input("Licenciatura:")
     materia = st.text_input("Materia:")
 
     if st.button("Registrar", key="registrar_alumno_button"):
@@ -90,7 +90,7 @@ elif menu == "Registrar Alumno":
                 "apellido_materno": apellido_materno,
                 "nombre": nombre,
                 "matricula": matricula,
-                "licenciatura": nivel,
+                "licenciatura": licenciatura,
                 "materia": materia,
                 "registros": {}
             })
@@ -101,6 +101,7 @@ elif menu == "Registrar Alumno":
 
 # Consultar Alumno
 elif menu == "Consultar Alumno":
+    #data = cargar_datos()
     st.title("Consultar Alumno")
     consulta_id = st.number_input("Ingresa el ID del Alumno:", min_value=1, step=1, format="%d")
 
@@ -110,10 +111,8 @@ elif menu == "Consultar Alumno":
             st.write(f"**ID:** {alumno['id']}")
             st.write(f"**Nombre:** {alumno['nombre']} {alumno['apellido_paterno']} {alumno['apellido_materno']}")
             st.write(f"**Matrícula:** {alumno['matricula']}")
-            st.write(f"**Licenciatura:** {alumno['nivel']}")
+            st.write(f"**Licenciatura:** {alumno['licenciatura']}")
             st.write(f"**Materia:** {alumno['materia']}")
-            #st.write(f"**Asistencias:** {alumno['asistencia']}")
-            #st.write(f"**Retardos:** {alumno['retardo']}")
 
         else:
             st.error("No se encontró ningún alumno con ese ID.")
@@ -129,11 +128,11 @@ elif menu == "Consultar Alumno":
                 export_data.append({
                     "Fecha": fecha,
                     "Asistencia": detalles["asistencias"],
-                    "Retardo": detalles["retardos"]
+                    "Justificado": detalles["justificados"],
                 })
             df_export = pd.DataFrame(export_data)
             st.dataframe(df_export)
-            csv = df_export.to_csv(index=False).encode("utf-8")
+            csv = df_export.to_csv(index=False).encode("UTF-8")
             st.download_button(
                 label="Descargar CSV",
                 data=csv,
@@ -146,7 +145,7 @@ elif menu == "Modificar Alumno":
     st.title("Modificar Alumno")
 
     # Obtener niveles de la tabla de todos los registros
-    niveles = list(set(record["nivel"] for record in data))
+    licenciaturas = list(set(record["licenciatura"] for record in data))
     materias = list(set(record["materia"] for record in data))
 
     modificar_id = st.number_input("Ingresa el ID del Alumno a Modificar:", min_value=1, step=1, format="%d")
@@ -157,16 +156,16 @@ elif menu == "Modificar Alumno":
         nuevo_apellido_materno = st.text_input("Apellido Materno:", alumno["apellido_materno"])
         nuevo_nombre = st.text_input("Nombre(s):", alumno["nombre"])
         nueva_matricula = st.text_input("Matrícula:", alumno["matricula"])
-        nuevo_nivel = st.selectbox("Licenciatura:", niveles)
+        nuevo_licenciatura = st.selectbox("Licenciatura:", licenciaturas)
         nuevo_materia = st.selectbox("Materia:", materias)
-        #nuevo_materia = st.text_input("Materia:", alumno["materia"])
+        
 
         if st.button("Guardar Cambios", key="modificar_alumno_button"):
             alumno["apellido_paterno"] = nuevo_apellido_paterno
             alumno["apellido_materno"] = nuevo_apellido_materno
             alumno["nombre"] = nuevo_nombre
             alumno["matricula"] = nueva_matricula
-            alumno["nivel"] = nuevo_nivel
+            alumno["licenciatura"] = nuevo_licenciatura
             alumno["materia"] = nuevo_materia
             save_data(data)
             st.success("Datos del alumno actualizados correctamente.")
@@ -195,16 +194,17 @@ elif menu == "Mostrar Todos los Registros":
         formatted_data = []
         for record in data:
             total_asistencias = sum(day["asistencias"] for day in record.get("registros", {}).values())
-            total_retardos = sum(day["retardos"] for day in record.get("registros", {}).values())
+            total_justificados = sum(day["justificados"] for day in record.get("registros", {}).values())
             formatted_data.append({
                 "ID": record["id"],
                 "Apellido Paterno": record["apellido_paterno"],
                 "Apellido Materno": record["apellido_materno"],
                 "Nombre": record["nombre"],
                 "Matrícula": record["matricula"],
-                "Licenciatura": record["nivel"],
+                "Materia": record["materia"],
+                "Licenciatura": record["licenciatura"],
                 "Total Asistencias": total_asistencias,
-                "Total Retardos": total_retardos
+                "Total Justificados": total_justificados
             })
 
         df = pd.DataFrame(formatted_data)
@@ -218,7 +218,7 @@ elif menu == "Mostrar Todos los Registros":
     if generar_equipos:
         # Extraer las materias y niveles disponibles en los registros
         materias = list(set(record["materia"] for record in data))
-        niveles = list(set(record["nivel"] for record in data))
+        #niveles = list(set(record["nivel"] for record in data))
         
         materia = st.selectbox("Selecciona la Materia", materias)
         #nivel = st.selectbox("Selecciona el Nivel", niveles)
@@ -264,7 +264,7 @@ elif menu == "Importar desde CSV":
 
     if archivo_csv is not None:
         try:
-            df = pd.read_csv(archivo_csv, encoding="latin-1")
+            df = pd.read_csv(archivo_csv, encoding="UTF-8")
             for _, row in df.iterrows():
                 new_id = len(data) + 1
                 data.append({
@@ -273,7 +273,7 @@ elif menu == "Importar desde CSV":
                     "apellido_materno": row["apellido_materno"],
                     "nombre": row["nombre"],
                     "matricula": row["matricula"],
-                    "Licenciatura": row["nivel"],
+                    "licenciatura": row["licenciatura"],
                     "materia": row["materia"],
                     "registros": {}
                 })
@@ -281,4 +281,4 @@ elif menu == "Importar desde CSV":
             st.success("Datos importados correctamente desde el archivo CSV.")
         except Exception as e:
             st.error(f"Error al importar el archivo CSV: {e}")
-#Terminado!
+#Terminado! LIC
